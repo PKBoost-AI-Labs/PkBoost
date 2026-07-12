@@ -250,13 +250,6 @@ impl OptimizedTreeShannon {
                 (g_slice.iter().sum(), h_slice.iter().sum())
             };
 
-            // OPTIMIZATION 3: Early gradient-based pruning
-            let gradient_norm = g_total.abs();
-            if gradient_norm < params.min_child_weight * 0.01 {
-                self.set_leaf(task.node_index, -g_total / (h_total + params.reg_lambda));
-                continue;
-            }
-
             // Stopping conditions
             if task.depth >= self.max_depth
                 || n_samples < params.min_samples_split

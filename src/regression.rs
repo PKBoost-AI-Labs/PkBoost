@@ -474,6 +474,13 @@ mod tests {
         model.fit(x.view(), y.view(), None, false).expect("fit");
         let predictions = model.predict(x.view()).expect("predict");
         assert_eq!(predictions.len(), y.len());
+        assert!(
+            predictions
+                .iter()
+                .skip(1)
+                .any(|prediction| (prediction - predictions[0]).abs() > 1e-9),
+            "a non-constant target should produce a non-constant fit"
+        );
     }
 }
 
