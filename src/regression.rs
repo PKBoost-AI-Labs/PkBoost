@@ -9,6 +9,7 @@ use crate::{
     tree::{OptimizedTreeShannon, TreeParams},
 };
 use ndarray::{Array1, ArrayView1, ArrayView2};
+use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use rayon::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
@@ -85,6 +86,7 @@ pub struct PKBoostRegressor {
     pub gamma: f64,
     pub subsample: f64,
     pub colsample_bytree: f64,
+    pub random_seed: u64,
     pub early_stopping_rounds: usize,
     pub histogram_bins: usize,
     pub trees: Vec<OptimizedTreeShannon>,
@@ -110,6 +112,7 @@ impl PKBoostRegressor {
             gamma: 0.0,
             subsample: 0.8,
             colsample_bytree: 0.8,
+            random_seed: 42,
             early_stopping_rounds: 50,
             histogram_bins: 32,
             trees: Vec::new(),
@@ -213,11 +216,10 @@ impl PKBoostRegressor {
             println!("Samples: {}, Features: {}", n_samples, n_features);
         }
 
+        let mut rng = StdRng::seed_from_u64(self.random_seed);
         for iter in 0..self.n_estimators {
-            let mut rng = rand::thread_rng();
             let sample_size = (self.subsample * n_samples as f64) as usize;
             let mut sample_indices: Vec<usize> = (0..n_samples).collect();
-            use rand::seq::SliceRandom;
             sample_indices.shuffle(&mut rng);
             sample_indices.truncate(sample_size);
 
@@ -481,6 +483,20 @@ mod tests {
                 .any(|prediction| (prediction - predictions[0]).abs() > 1e-9),
             "a non-constant target should produce a non-constant fit"
         );
+
+        let mut repeated = PKBoostRegressor::auto(x.view(), y.view());
+        repeated.n_estimators = model.n_estimators;
+        repeated.early_stopping_rounds = model.early_stopping_rounds;
+        repeated.min_samples_split = model.min_samples_split;
+        repeated.subsample = model.subsample;
+        repeated.colsample_bytree = model.colsample_bytree;
+        repeated.random_seed = model.random_seed;
+        repeated
+            .fit(x.view(), y.view(), None, false)
+            .expect("repeat fit");
+        let repeated_predictions = repeated.predict(x.view()).expect("repeat predict");
+
+        assert_eq!(predictions, repeated_predictions);
     }
 }
 
