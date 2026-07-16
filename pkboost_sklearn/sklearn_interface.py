@@ -35,7 +35,7 @@ except ImportError:
     raise ImportError("PKBoost not installed. Run: pip install pkboost")
 
 
-class PKBoostClassifier(ClassifierMixin, BaseEstimator):
+class PKBoostClassifier(BaseEstimator, ClassifierMixin):
     """
     Scikit-learn compatible PKBoost binary classifier.
     
@@ -237,13 +237,12 @@ class PKBoostClassifier(ClassifierMixin, BaseEstimator):
         
         return np.column_stack([proba_class_0, proba_class_1])
     
-    def predict(self, X):
+    def predict(self, X, threshold: float = 0.5):
         """Predict class labels."""
         proba = self.predict_proba(X)[:, 1]
-        threshold = 0.5
         predictions = (proba >= threshold).astype(int)
         return self.classes_[predictions]
-
+    
     def predict_log_proba(self, X):
         """Predict class log-probabilities."""
         proba = self.predict_proba(X)
@@ -338,7 +337,7 @@ class PKBoostClassifier(ClassifierMixin, BaseEstimator):
         return instance
 
 
-class PKBoostRegressor(RegressorMixin, BaseEstimator):
+class PKBoostRegressor(BaseEstimator, RegressorMixin):
     """Scikit-learn compatible PKBoost regressor."""
     
     def __init__(self, auto: bool = True, random_state: Optional[int] = None):
@@ -359,9 +358,9 @@ class PKBoostRegressor(RegressorMixin, BaseEstimator):
             y_val = y_val.astype(np.float64)
         
         if self.auto:
-            self._model = pkboost.PKBoostRegressor.auto()
+            self._model = pkboost.PKBoostRegressorPy.auto()
         else:
-            self._model = pkboost.PKBoostRegressor()
+            self._model = pkboost.PKBoostRegressorPy()
         
         X = np.ascontiguousarray(X, dtype=np.float64)
         y = np.ascontiguousarray(y, dtype=np.float64)
@@ -395,7 +394,7 @@ class PKBoostRegressor(RegressorMixin, BaseEstimator):
         return r2_score(y, y_pred, sample_weight=sample_weight)
 
 
-class PKBoostAdaptiveClassifier(ClassifierMixin, BaseEstimator):
+class PKBoostAdaptiveClassifier(BaseEstimator, ClassifierMixin):
     """Scikit-learn compatible adaptive PKBoost classifier with drift detection."""
     
     def __init__(self, auto: bool = True):
@@ -456,13 +455,12 @@ class PKBoostAdaptiveClassifier(ClassifierMixin, BaseEstimator):
         
         return np.column_stack([proba_class_0, proba_class_1])
     
-    def predict(self, X):
+    def predict(self, X, threshold: float = 0.5):
         """Predict class labels."""
         proba = self.predict_proba(X)[:, 1]
-        threshold = 0.5
         predictions = (proba >= threshold).astype(int)
         return self.classes_[predictions]
-
+    
     def get_status(self):
         """Get current adaptation status."""
         check_is_fitted(self)
